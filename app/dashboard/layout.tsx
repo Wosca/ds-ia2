@@ -1,16 +1,8 @@
-import type { Metadata } from "next";
-import {
-  SignedIn,
-  SignedOut,
-  UserButton,
-  RedirectToSignIn,
-} from "@clerk/nextjs";
-import { Sidebar } from "@/components/sidebar";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Dashboard | Esports Hub",
-  description: "Manage esports teams, labs, and tournaments",
-};
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import { Sidebar } from "@/components/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({
   children,
@@ -20,18 +12,15 @@ export default function DashboardLayout({
   return (
     <>
       <SignedIn>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex-1 flex flex-col">
-            <header className="h-16 border-b flex items-center justify-between px-6">
-              <div></div>
-              <div className="flex items-center gap-4">
-                <UserButton afterSignOutUrl="/" />
-              </div>
-            </header>
-            <main className="flex-1 overflow-auto">{children}</main>
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full">
+            <Sidebar />
+
+            <div className="flex flex-1 flex-col">
+              <main className="flex-1 overflow-auto p-6">{children}</main>
+            </div>
           </div>
-        </div>
+        </SidebarProvider>
       </SignedIn>
       <SignedOut>
         <RedirectToSignIn />

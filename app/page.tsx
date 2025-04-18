@@ -1,28 +1,64 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { useClerk } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
+import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { TrophyIcon, UsersIcon, LayoutGridIcon } from "lucide-react";
+import { AuthModal } from "@/components/auth-modal";
 
 export default function Home() {
-  const { openSignIn, openSignUp } = useClerk();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const pathname = usePathname();
+
+  const isInDashboard = pathname?.startsWith("/dashboard");
+
+  const openModal = (mode: "sign-in" | "sign-up") => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsAuthModalOpen(false);
+  };
+
+  const toggleMode = () => {
+    setAuthMode(authMode === "sign-in" ? "sign-up" : "sign-in");
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          {/* <Logo /> */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => openSignIn()}>
-              Sign In
-            </Button>
-            <Button onClick={() => openSignUp()}>Sign Up</Button>
+      {/* Header - Only show on non-dashboard pages */}
+      {!isInDashboard && (
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container mx-auto flex h-16 items-center justify-between px-4">
+            {/* Logo placeholder */}
+            <div className="font-bold text-xl">Esports Hub</div>
+
+            <div className="flex items-center gap-4">
+              <SignedIn>
+                {/* Show user button when signed in */}
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard">Dashboard</Link>
+                  </Button>
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
+
+              <SignedOut>
+                {/* Show sign in/up buttons when signed out */}
+                <Button variant="ghost" onClick={() => openModal("sign-in")}>
+                  Sign In
+                </Button>
+                <Button onClick={() => openModal("sign-up")}>Sign Up</Button>
+              </SignedOut>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Hero Section */}
       <section className="py-20 md:py-28">
@@ -35,12 +71,23 @@ export default function Home() {
             all in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => openSignUp()}>
-              Get Started
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/dashboard">Explore Features</Link>
-            </Button>
+            <SignedIn>
+              <Button size="lg" asChild>
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            </SignedIn>
+            <SignedOut>
+              <Button size="lg" onClick={() => openModal("sign-up")}>
+                Get Started
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => openModal("sign-in")}
+              >
+                Sign In
+              </Button>
+            </SignedOut>
           </div>
         </div>
       </section>
@@ -79,14 +126,21 @@ export default function Home() {
             Join thousands of players and teams who are already using Esports
             Hub.
           </p>
-          <Button
-            size="lg"
-            variant="secondary"
-            onClick={() => openSignUp()}
-            className="px-8"
-          >
-            Create your account
-          </Button>
+          <SignedIn>
+            <Button size="lg" variant="secondary" asChild className="px-8">
+              <Link href="/dashboard">Go to Dashboard</Link>
+            </Button>
+          </SignedIn>
+          <SignedOut>
+            <Button
+              size="lg"
+              variant="secondary"
+              onClick={() => openModal("sign-up")}
+              className="px-8"
+            >
+              Create your account
+            </Button>
+          </SignedOut>
         </div>
       </section>
 
@@ -94,13 +148,23 @@ export default function Home() {
       <footer className="border-t py-12 mt-auto">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            {/* <Logo /> */}
+            <div className="font-bold text-xl">Esports Hub</div>
             <p className="text-muted-foreground mt-4 md:mt-0">
               © {new Date().getFullYear()} Esports Hub. All rights reserved.
             </p>
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <SignedOut>
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={closeModal}
+          mode={authMode}
+          onToggleMode={toggleMode}
+        />
+      </SignedOut>
     </div>
   );
 }
