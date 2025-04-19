@@ -1,8 +1,7 @@
 "use client";
 
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
-import { Sidebar } from "@/components/sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarLayout } from "@/components/SidebarNav";
 
 export default function DashboardLayout({
   children,
@@ -12,15 +11,7 @@ export default function DashboardLayout({
   return (
     <>
       <SignedIn>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full">
-            <Sidebar />
-
-            <div className="flex flex-1 flex-col">
-              <main className="flex-1 overflow-auto p-6">{children}</main>
-            </div>
-          </div>
-        </SidebarProvider>
+        <SidebarLayout>{children}</SidebarLayout>
       </SignedIn>
       <SignedOut>
         <RedirectToSignIn />

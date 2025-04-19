@@ -18,15 +18,11 @@ import {
 import {
   Moon,
   Sun,
-  TreePine,
   UserCircle,
   Settings,
   ChevronDown,
   ChevronUp,
   LogOut,
-  Flower,
-  Flower2,
-  MoonStar,
   HomeIcon,
   LayoutGridIcon,
   TrophyIcon,
@@ -58,30 +54,6 @@ export function SidebarNav() {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const pathname = usePathname();
 
-  // Get utilities grouped by category
-  const mainItems = [
-    {
-      href: "/dashboard",
-      title: "Dashboard",
-      icon: <HomeIcon className="h-4 w-4" />,
-    },
-    {
-      href: "/dashboard/labs",
-      title: "Labs",
-      icon: <LayoutGridIcon className="h-4 w-4" />,
-    },
-    {
-      href: "/dashboard/tournaments",
-      title: "Tournaments",
-      icon: <TrophyIcon className="h-4 w-4" />,
-    },
-    {
-      href: "/dashboard/teams",
-      title: "Teams",
-      icon: <UsersIcon className="h-4 w-4" />,
-    },
-  ];
-
   // Helper function to determine if a theme is active
   const isActiveTheme = (themeName: string) => {
     if (themeName === "system") {
@@ -90,29 +62,70 @@ export function SidebarNav() {
     return theme === themeName;
   };
 
+  // Define categories and menu items
+  const categories = [
+    {
+      category: "Esports Tools",
+      items: [
+        {
+          name: "Dashboard",
+          href: "/dashboard",
+          icon: <HomeIcon className="h-4 w-4" />,
+        },
+        {
+          name: "Labs",
+          href: "/dashboard/labs",
+          icon: <LayoutGridIcon className="h-4 w-4" />,
+        },
+        {
+          name: "Tournaments",
+          href: "/dashboard/tournaments",
+          icon: <TrophyIcon className="h-4 w-4" />,
+        },
+        {
+          name: "Teams",
+          href: "/dashboard/teams",
+          icon: <UsersIcon className="h-4 w-4" />,
+        },
+      ],
+    },
+  ];
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="flex items-center px-4">
           <Link href="/" className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">Canterbury</h1>
+            <h1 className="text-xl font-bold">Esports Hub</h1>
           </Link>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {mainItems.map((category) => (
-          <SidebarMenuItem key={category.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === category.href}
-              tooltip={category.title}
-            >
-              <Link href={category.href}>
-                {category.icon}
-                <span>{category.title}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+        {categories.map((category) => (
+          <SidebarGroup key={category.category}>
+            <SidebarGroupLabel>{category.category}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {category.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        pathname === item.href ||
+                        pathname.startsWith(`${item.href}/`)
+                      }
+                      tooltip={item.name}
+                    >
+                      <Link href={item.href}>
+                        {item.icon}
+                        <span>{item.name}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         ))}
       </SidebarContent>
 
@@ -190,59 +203,6 @@ export function SidebarNav() {
                     variant="ghost"
                     size="sm"
                     className={`w-full justify-start pl-9 ${
-                      isActiveTheme("twilight")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("twilight")}
-                  >
-                    <MoonStar className="mr-2 h-4 w-4" />
-                    Twilight
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("pink")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("pink")}
-                  >
-                    <Flower className="mr-2 h-4 w-4" />
-                    Pink
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("periwinkle")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("periwinkle")}
-                  >
-                    <TreePine className="mr-2 h-4 w-4" />
-                    Periwinkle
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("sage")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("sage")}
-                  >
-                    <Flower2 className="mr-2 h-4 w-4" />
-                    Sage
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
                       isActiveTheme("system")
                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         : ""
@@ -267,13 +227,18 @@ export function SidebarNav() {
             <SidebarMenu>
               <SignedIn>
                 <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <UserCircle className="h-5 w-5" />
-                    <span>
-                      {isLoaded && user
-                        ? `${user.firstName} ${user.lastName}`
-                        : "Profile"}
-                    </span>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/profile"}
+                  >
+                    <Link href="/dashboard/profile">
+                      <UserCircle className="h-5 w-5" />
+                      <span>
+                        {isLoaded && user
+                          ? `${user.firstName || ""} ${user.lastName || ""}`
+                          : "Profile"}
+                      </span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
