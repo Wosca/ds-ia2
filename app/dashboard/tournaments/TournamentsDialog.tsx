@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Dialog,
   DialogContent,
@@ -200,7 +199,14 @@ export function TournamentsDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        // Prevent closing the dialog if loading
+        if (loading && !isOpen) return;
+        onOpenChange(isOpen);
+      }}
+    >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
@@ -306,10 +312,9 @@ export function TournamentsDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <LoadingButton onClick={handleSubmit} loading={loading}>
             {isEditMode ? "Update Tournament" : "Create Tournament"}
-          </Button>
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

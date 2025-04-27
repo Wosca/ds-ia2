@@ -8,7 +8,7 @@ import {
 import PageBackground from "@/components/PageBackground";
 import { Separator } from "@/components/ui/separator";
 
-export default function TournamentsLoading() {
+export default function WatchPartiesLoading() {
   return (
     <PageBackground>
       <div className="px-4 sm:px-6 space-y-8">
@@ -23,7 +23,7 @@ export default function TournamentsLoading() {
         <div className="space-y-2">
           <Skeleton className="h-10 w-[200px] mb-4" />
 
-          {/* My Tournaments Tab */}
+          {/* My Watch Parties Tab */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <Card key={i}>
@@ -48,11 +48,11 @@ export default function TournamentsLoading() {
                     </div>
                     <div className="flex items-center">
                       <Skeleton className="h-4 w-4 mr-2" />
-                      <Skeleton className="h-4 w-[150px]" />
+                      <Skeleton className="h-4 w-[120px]" />
                     </div>
                     <div className="flex items-center">
                       <Skeleton className="h-4 w-4 mr-2" />
-                      <Skeleton className="h-4 w-[130px]" />
+                      <Skeleton className="h-4 w-[100px]" />
                     </div>
                   </div>
                 </CardContent>
@@ -64,7 +64,7 @@ export default function TournamentsLoading() {
             ))}
           </div>
 
-          {/* Available Tournaments Tab */}
+          {/* Available Watch Parties Tab */}
           <Card className="mt-4">
             <CardHeader>
               <Skeleton className="h-6 w-[180px] mb-2" />

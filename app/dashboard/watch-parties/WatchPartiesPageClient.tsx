@@ -36,108 +36,124 @@ import {
   Check,
   Trash2,
   Users,
-  Search,
+  MapPin,
+  Eye,
+  Clock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { TournamentsDialog } from "./TournamentsDialog";
+import { WatchPartyDialog } from "./WatchPartyDialog";
 import {
-  createTournament,
-  updateTournament,
-  deleteTournament,
-  registerForTournament,
-  unregisterFromTournament,
-} from "@/lib/tournamentActions";
+  createWatchParty,
+  updateWatchParty,
+  deleteWatchParty,
+  joinWatchParty,
+  leaveWatchParty,
+} from "@/lib/watchPartyActions";
 import { toast } from "sonner";
 
 // Define the types for our props
-interface TournamentsPageClientProps {
-  userTournaments: {
+interface WatchPartiesPageClientProps {
+  userWatchParties: {
+    watchPartyId: number;
     tournamentId: number;
     tournamentName: string;
     game: string;
-    genre: string;
     date: Date;
-    prizeFund: string;
+    time: string;
+    location: string;
+    maxAttendees: string | number;
+    attendeeCount: number;
     creatorId: string;
     createdAt: Date;
     updatedAt: Date;
-    registeredAt: Date;
+    joinedAt: Date;
   }[];
-  availableTournaments: {
+  availableWatchParties: {
+    id: number;
+    tournamentId: number;
+    tournamentName: string;
+    game: string;
+    date: Date;
+    time: string;
+    location: string;
+    maxAttendees: string | number;
+    attendeeCount: number;
+    creatorId: string;
+    createdAt: Date;
+  }[];
+  tournamentOptions: {
     id: number;
     name: string;
-    game: string;
-    genre: string;
-    date: Date;
-    prizeFund: string;
-    creatorId: string | null;
-    createdAt: Date | null;
   }[];
   user: { id: string; firstName: string; lastName: string };
 }
 
-// Type for tournament data
-type TournamentData = {
+// Type for watch party data
+type WatchPartyData = {
+  watchPartyId: number;
   tournamentId: number;
-  name: string;
+  tournamentName: string;
   game: string;
-  genre: string;
   date: Date;
-  prizeFund: string;
+  time: string;
+  location: string;
+  maxAttendees: string;
+  attendeeCount: number;
   isCreator: boolean;
 };
 
-export default function TournamentsPageClient({
-  userTournaments,
-  availableTournaments,
+export default function WatchPartiesPageClient({
+  userWatchParties,
+  availableWatchParties,
+  tournamentOptions,
   user,
-}: TournamentsPageClientProps) {
+}: WatchPartiesPageClientProps) {
   const router = useRouter();
 
-  // Tournament dialog state
+  // Watch party dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTournament, setSelectedTournament] = useState<
-    TournamentData | undefined
+  const [selectedWatchParty, setSelectedWatchParty] = useState<
+    WatchPartyData | undefined
   >(undefined);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
 
   // Alert dialog states
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [alertAction, setAlertAction] = useState<{
-    type: "unregister" | "delete";
-    tournamentId: number;
-    tournamentName: string;
+    type: "leave" | "delete";
+    watchPartyId: number;
+    watchPartyName: string;
   } | null>(null);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchFilter, setSearchFilter] = useState<"name" | "game" | "genre">(
-    "name"
-  );
+  const [searchFilter, setSearchFilter] = useState<
+    "tournament" | "location" | "date"
+  >("tournament");
 
   // Loading states
-  const [registerLoading, setRegisterLoading] = useState<number | null>(null);
+  const [joinLoading, setJoinLoading] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Handle successful tournament actions
+  // Handle successful watch party actions
   const handleActionComplete = () => {
     closeDialog();
     router.refresh();
   };
 
-  // Open create tournament dialog
+  // Open create watch party dialog
   const openCreateDialog = () => {
-    setSelectedTournament(undefined);
+    setSelectedWatchParty(undefined);
     setDialogMode("create");
     setDialogOpen(true);
   };
 
-  // Open edit tournament dialog
-  const openEditDialog = (tournament: TournamentData) => {
-    setSelectedTournament(tournament);
+  // Open edit watch party dialog
+  const openEditDialog = (watchParty: WatchPartyData) => {
+    setSelectedWatchParty(watchParty);
     setDialogMode("edit");
     setDialogOpen(true);
   };
@@ -147,72 +163,72 @@ export default function TournamentsPageClient({
     setDialogOpen(false);
     // Reset state after dialog animation completes
     setTimeout(() => {
-      setSelectedTournament(undefined);
+      setSelectedWatchParty(undefined);
     }, 300);
   };
 
-  // Open alert dialog for tournament actions that need confirmation
+  // Open alert dialog for watch party actions that need confirmation
   const openAlertDialog = (
-    type: "unregister" | "delete",
-    tournamentId: number,
-    tournamentName: string
+    type: "leave" | "delete",
+    watchPartyId: number,
+    watchPartyName: string
   ) => {
-    setAlertAction({ type, tournamentId, tournamentName });
+    setAlertAction({ type, watchPartyId, watchPartyName });
     setAlertDialogOpen(true);
   };
 
-  // Handle register for tournament
-  const handleRegisterForTournament = async (tournamentId: number) => {
+  // Handle joining a watch party
+  const handleJoinWatchParty = async (watchPartyId: number) => {
     try {
-      setRegisterLoading(tournamentId);
-      const result = await registerForTournament(tournamentId);
+      setJoinLoading(watchPartyId);
+      const result = await joinWatchParty(watchPartyId);
       if (result.success) {
-        toast.success("You have successfully registered for the tournament");
+        toast.success("You have successfully joined the watch party");
         router.refresh();
       } else {
-        toast.error(result.error || "Failed to register for tournament");
+        toast.error(result.error || "Failed to join watch party");
       }
     } catch (error) {
-      console.error("Error registering for tournament:", error);
-      toast.error("An error occurred when registering for the tournament");
+      console.error("Error joining watch party:", error);
+      toast.error("An error occurred when joining the watch party");
     } finally {
-      setRegisterLoading(null);
+      setJoinLoading(null);
     }
   };
 
-  // Handle unregister from tournament
-  const handleUnregisterFromTournament = async (tournamentId: number) => {
+  // Handle leaving a watch party
+  const handleLeaveWatchParty = async (watchPartyId: number) => {
     try {
       setActionLoading(true);
-      const result = await unregisterFromTournament(tournamentId);
+      const result = await leaveWatchParty(watchPartyId);
       if (result.success) {
-        toast.success("You have unregistered from the tournament");
+        toast.success("You have left the watch party");
         router.refresh();
       } else {
-        toast.error(result.error || "Failed to unregister from tournament");
+        toast.error(result.error || "Failed to leave watch party");
       }
     } catch (error) {
-      console.error("Error unregistering from tournament:", error);
-      toast.error("An error occurred when unregistering from the tournament");
+      console.error("Error leaving watch party:", error);
+      toast.error("An error occurred when leaving the watch party");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle delete tournament
-  const handleDeleteTournament = async (tournamentId: number) => {
+  // Handle delete watch party
+  const handleDeleteWatchParty = async (watchPartyId: number) => {
     try {
       setActionLoading(true);
-      const result = await deleteTournament(tournamentId);
+      const result = await deleteWatchParty(watchPartyId);
       if (result.success) {
-        toast.success("Tournament successfully deleted");
+        toast.success("Watch party successfully deleted");
         router.refresh();
       } else {
-        toast.error(result.error || "Failed to delete tournament");
+        toast.error(result.error || "Failed to delete watch party");
       }
     } catch (error) {
-      console.error("Error deleting tournament:", error);
-      toast.error("An error occurred when deleting the tournament");
+      console.error("Error deleting watch party:", error);
+      toast.error("An error occurred when deleting the watch party");
     } finally {
       setActionLoading(false);
     }
@@ -222,30 +238,31 @@ export default function TournamentsPageClient({
   const handleConfirmedAction = () => {
     if (!alertAction) return;
 
-    if (alertAction.type === "unregister") {
-      handleUnregisterFromTournament(alertAction.tournamentId);
+    if (alertAction.type === "leave") {
+      handleLeaveWatchParty(alertAction.watchPartyId);
     } else if (alertAction.type === "delete") {
-      handleDeleteTournament(alertAction.tournamentId);
+      handleDeleteWatchParty(alertAction.watchPartyId);
     }
 
     setAlertDialogOpen(false);
     setAlertAction(null);
   };
 
-  // Filter available tournaments based on search
-  const filteredTournaments = availableTournaments.filter((tournament) => {
+  // Filter available watch parties based on search
+  const filteredWatchParties = availableWatchParties.filter((party) => {
     if (!searchTerm) return true;
 
     const searchLower = searchTerm.toLowerCase();
     switch (searchFilter) {
-      case "name":
-        return tournament.name.toLowerCase().includes(searchLower);
-      case "game":
-        return tournament.game.toLowerCase().includes(searchLower);
-      case "genre":
-        return tournament.genre.toLowerCase().includes(searchLower);
+      case "tournament":
+        return party.tournamentName.toLowerCase().includes(searchLower);
+      case "location":
+        return party.location.toLowerCase().includes(searchLower);
+      case "date":
+        const dateString = format(new Date(party.date), "MMMM d, yyyy");
+        return dateString.toLowerCase().includes(searchLower);
       default:
-        return tournament.name.toLowerCase().includes(searchLower);
+        return party.tournamentName.toLowerCase().includes(searchLower);
     }
   });
 
@@ -253,48 +270,45 @@ export default function TournamentsPageClient({
     <div className="px-4 sm:px-6 space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Esports Tournaments
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Watch Parties</h1>
           <p className="text-muted-foreground">
-            Create or register for esports tournaments and compete with your
-            team
+            Create or join watch parties for esports tournaments
           </p>
         </div>
         <Button onClick={openCreateDialog}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Create Tournament
+          <PlusCircle className="mr-2 h-4 w-4" /> Create Watch Party
         </Button>
       </div>
 
-      <Tabs defaultValue="my-tournaments" className="w-full">
+      <Tabs defaultValue="my-parties" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="my-tournaments">
-            <Trophy className="h-4 w-4 mr-2" />
-            My Tournaments
+          <TabsTrigger value="my-parties">
+            <Eye className="h-4 w-4 mr-2" />
+            My Watch Parties
           </TabsTrigger>
-          <TabsTrigger value="available-tournaments">
-            <Gamepad2 className="h-4 w-4 mr-2" />
-            Browse Tournaments
+          <TabsTrigger value="available-parties">
+            <Users className="h-4 w-4 mr-2" />
+            Browse Watch Parties
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-tournaments" className="space-y-6">
+        <TabsContent value="my-parties" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {userTournaments.length > 0 ? (
-              userTournaments.map((tournament) => (
-                <Card key={tournament.tournamentId}>
+            {userWatchParties.length > 0 ? (
+              userWatchParties.map((party) => (
+                <Card key={party.watchPartyId}>
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle>{tournament.tournamentName}</CardTitle>
+                        <CardTitle>{party.tournamentName}</CardTitle>
                         <CardDescription>
-                          {tournament.creatorId === user.id
-                            ? "Tournament Organizer"
-                            : "Registered Participant"}
+                          {party.creatorId === user.id
+                            ? "Party Organizer"
+                            : "Party Attendee"}
                         </CardDescription>
                       </div>
                       <div className="bg-secondary p-2 rounded-full">
-                        <Trophy className="h-4 w-4 text-secondary-foreground" />
+                        <Eye className="h-4 w-4 text-secondary-foreground" />
                       </div>
                     </div>
                   </CardHeader>
@@ -304,7 +318,7 @@ export default function TournamentsPageClient({
                         <Gamepad2 className="h-4 w-4 mr-2 text-muted-foreground" />
                         <p className="text-sm">
                           Game:{" "}
-                          <span className="font-medium">{tournament.game}</span>
+                          <span className="font-medium">{party.game}</span>
                         </p>
                       </div>
                       <div className="flex items-center">
@@ -312,46 +326,52 @@ export default function TournamentsPageClient({
                         <p className="text-sm">
                           Date:{" "}
                           <span className="font-medium">
-                            {format(new Date(tournament.date), "MMMM d, yyyy")}
+                            {format(new Date(party.date), "MMMM d, yyyy")}
                           </span>
+                        </p>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <p className="text-sm">
+                          Time:{" "}
+                          <span className="font-medium">{party.time}</span>
+                        </p>
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <p className="text-sm">
+                          Location:{" "}
+                          <span className="font-medium">{party.location}</span>
                         </p>
                       </div>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-2 text-muted-foreground" />
                         <p className="text-sm">
-                          Genre:{" "}
+                          Attendees:{" "}
                           <span className="font-medium">
-                            {tournament.genre}
+                            {party.attendeeCount} / {party.maxAttendees}
                           </span>
                         </p>
                       </div>
-                      {tournament.prizeFund && (
-                        <div className="flex items-center">
-                          <Trophy className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <p className="text-sm">
-                            Prize:{" "}
-                            <span className="font-medium">
-                              {tournament.prizeFund}
-                            </span>
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                   <CardFooter className="border-t pt-4 flex justify-end space-x-2">
-                    {tournament.creatorId === user.id ? (
+                    {party.creatorId === user.id ? (
                       <>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             openEditDialog({
-                              tournamentId: tournament.tournamentId,
-                              name: tournament.tournamentName,
-                              game: tournament.game,
-                              genre: tournament.genre,
-                              date: tournament.date,
-                              prizeFund: tournament.prizeFund,
+                              watchPartyId: party.watchPartyId,
+                              tournamentId: party.tournamentId,
+                              tournamentName: party.tournamentName,
+                              game: party.game,
+                              date: party.date,
+                              time: party.time,
+                              location: party.location,
+                              maxAttendees: party.maxAttendees.toString(),
+                              attendeeCount: party.attendeeCount,
                               isCreator: true,
                             })
                           }
@@ -365,8 +385,8 @@ export default function TournamentsPageClient({
                           onClick={() =>
                             openAlertDialog(
                               "delete",
-                              tournament.tournamentId,
-                              tournament.tournamentName
+                              party.watchPartyId,
+                              party.tournamentName
                             )
                           }
                         >
@@ -380,13 +400,13 @@ export default function TournamentsPageClient({
                         loading={actionLoading}
                         onClick={() =>
                           openAlertDialog(
-                            "unregister",
-                            tournament.tournamentId,
-                            tournament.tournamentName
+                            "leave",
+                            party.watchPartyId,
+                            party.tournamentName
                           )
                         }
                       >
-                        <Users className="h-4 w-4 mr-2" /> Unregister
+                        <Users className="h-4 w-4 mr-2" /> Leave
                       </LoadingButton>
                     )}
                   </CardFooter>
@@ -394,30 +414,30 @@ export default function TournamentsPageClient({
               ))
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center p-8 rounded-lg border border-dashed space-y-2 text-center text-muted-foreground">
-                <Trophy className="h-10 w-10 mb-2 text-muted-foreground/70" />
-                <h3 className="font-medium">No Tournaments Found</h3>
+                <Eye className="h-10 w-10 mb-2 text-muted-foreground/70" />
+                <h3 className="font-medium">No Watch Parties Found</h3>
                 <p className="text-sm">
-                  You have not created or registered for any tournaments yet
+                  You haven&apos;t created or joined any watch parties yet
                 </p>
                 <Button onClick={openCreateDialog}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Create Tournament
+                  <PlusCircle className="mr-2 h-4 w-4" /> Create Watch Party
                 </Button>
               </div>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="available-tournaments">
+        <TabsContent value="available-parties">
           <Card>
             <CardHeader>
-              <CardTitle>Browse Tournaments</CardTitle>
+              <CardTitle>Browse Watch Parties</CardTitle>
               <CardDescription>
-                Search and register for upcoming esports tournaments
+                Search and join watch parties for upcoming esports tournaments
               </CardDescription>
               <div className="flex flex-col sm:flex-row gap-4 mt-2">
                 <div className="flex-1">
                   <Input
-                    placeholder="Search tournaments..."
+                    placeholder="Search watch parties..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full"
@@ -425,25 +445,29 @@ export default function TournamentsPageClient({
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant={searchFilter === "name" ? "default" : "outline"}
+                    variant={
+                      searchFilter === "tournament" ? "default" : "outline"
+                    }
                     size="sm"
-                    onClick={() => setSearchFilter("name")}
+                    onClick={() => setSearchFilter("tournament")}
                   >
-                    <Search className="h-4 w-4 mr-2" /> Name
+                    <Trophy className="h-4 w-4 mr-2" /> Tournament
                   </Button>
                   <Button
-                    variant={searchFilter === "game" ? "default" : "outline"}
+                    variant={
+                      searchFilter === "location" ? "default" : "outline"
+                    }
                     size="sm"
-                    onClick={() => setSearchFilter("game")}
+                    onClick={() => setSearchFilter("location")}
                   >
-                    <Gamepad2 className="h-4 w-4 mr-2" /> Game
+                    <MapPin className="h-4 w-4 mr-2" /> Location
                   </Button>
                   <Button
-                    variant={searchFilter === "genre" ? "default" : "outline"}
+                    variant={searchFilter === "date" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSearchFilter("genre")}
+                    onClick={() => setSearchFilter("date")}
                   >
-                    <Users className="h-4 w-4 mr-2" /> Genre
+                    <Calendar className="h-4 w-4 mr-2" /> Date
                   </Button>
                 </div>
               </div>
@@ -452,52 +476,58 @@ export default function TournamentsPageClient({
             <CardContent className="p-0">
               <ScrollArea className="h-[400px]">
                 <div className="p-4 space-y-2">
-                  {filteredTournaments.length > 0 ? (
-                    filteredTournaments.map((tournament) => (
+                  {filteredWatchParties.length > 0 ? (
+                    filteredWatchParties.map((party) => (
                       <div
-                        key={tournament.id}
+                        key={party.id}
                         className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-start sm:items-center mb-2 sm:mb-0">
                           <div className="bg-secondary h-10 w-10 rounded-full flex items-center justify-center mr-3">
-                            <Trophy className="h-5 w-5 text-secondary-foreground" />
+                            <Eye className="h-5 w-5 text-secondary-foreground" />
                           </div>
                           <div>
-                            <p className="font-medium">{tournament.name}</p>
+                            <p className="font-medium">
+                              {party.tournamentName}
+                            </p>
                             <div className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
                               <span className="flex items-center">
                                 <Gamepad2 className="h-3 w-3 mr-1" />{" "}
-                                {tournament.game}
+                                {party.game}
                               </span>
                               <span className="flex items-center">
                                 <Calendar className="h-3 w-3 mr-1" />{" "}
-                                {format(
-                                  new Date(tournament.date),
-                                  "MMM d, yyyy"
-                                )}
+                                {format(new Date(party.date), "MMM d, yyyy")}
+                              </span>
+                              <span className="flex items-center">
+                                <Clock className="h-3 w-3 mr-1" /> {party.time}
+                              </span>
+                              <span className="flex items-center">
+                                <MapPin className="h-3 w-3 mr-1" />{" "}
+                                {party.location}
                               </span>
                               <span className="flex items-center">
                                 <Users className="h-3 w-3 mr-1" />{" "}
-                                {tournament.genre}
+                                {party.attendeeCount} / {party.maxAttendees}
                               </span>
-                              {tournament.prizeFund && (
-                                <span className="flex items-center">
-                                  <Trophy className="h-3 w-3 mr-1" />{" "}
-                                  {tournament.prizeFund}
-                                </span>
-                              )}
                             </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <LoadingButton
                             size="sm"
-                            loading={registerLoading === tournament.id}
-                            onClick={() =>
-                              handleRegisterForTournament(tournament.id)
+                            disabled={
+                              Number(party.attendeeCount) >=
+                              Number(party.maxAttendees)
                             }
+                            loading={joinLoading === party.id}
+                            onClick={() => handleJoinWatchParty(party.id)}
                           >
-                            <Users className="mr-2 h-4 w-4" /> Register
+                            <Users className="mr-2 h-4 w-4" />
+                            {Number(party.attendeeCount) >=
+                            Number(party.maxAttendees)
+                              ? "Full"
+                              : "Join"}
                           </LoadingButton>
                         </div>
                       </div>
@@ -507,13 +537,13 @@ export default function TournamentsPageClient({
                       <Check className="h-10 w-10 mb-2 text-muted-foreground/70" />
                       <h3 className="font-medium">
                         {searchTerm
-                          ? "No Tournaments Found"
-                          : "You've Registered for All Tournaments"}
+                          ? "No Watch Parties Found"
+                          : "You've Joined All Watch Parties"}
                       </h3>
                       <p className="text-sm mt-1">
                         {searchTerm
-                          ? `No tournaments match your search for "${searchTerm}"`
-                          : "There are no more tournaments available to register for"}
+                          ? `No watch parties match your search for "${searchTerm}"`
+                          : "There are no more watch parties available to join"}
                       </p>
                     </div>
                   )}
@@ -524,14 +554,15 @@ export default function TournamentsPageClient({
         </TabsContent>
       </Tabs>
 
-      <TournamentsDialog
+      <WatchPartyDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        tournament={selectedTournament}
+        watchParty={selectedWatchParty}
         mode={dialogMode}
         onComplete={handleActionComplete}
-        createTournament={createTournament}
-        updateTournament={updateTournament}
+        availableTournaments={tournamentOptions}
+        createWatchParty={createWatchParty}
+        updateWatchParty={updateWatchParty}
       />
 
       {/* Alert Dialog for confirmations */}
@@ -540,13 +571,13 @@ export default function TournamentsPageClient({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {alertAction?.type === "delete"
-                ? "Delete Tournament"
-                : "Unregister from Tournament"}
+                ? "Delete Watch Party"
+                : "Leave Watch Party"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {alertAction?.type === "delete"
-                ? `Are you sure you want to delete "${alertAction.tournamentName}"? This action cannot be undone.`
-                : `Are you sure you want to unregister from "${alertAction?.tournamentName}"? You will need to register again if you want to participate.`}
+                ? `Are you sure you want to delete the watch party for "${alertAction.watchPartyName}"? This action cannot be undone.`
+                : `Are you sure you want to leave the watch party for "${alertAction?.watchPartyName}"? You will need to rejoin if you want to attend.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -562,7 +593,7 @@ export default function TournamentsPageClient({
                   : ""
               }
             >
-              {alertAction?.type === "delete" ? "Delete" : "Unregister"}
+              {alertAction?.type === "delete" ? "Delete" : "Leave"}
             </LoadingButton>
           </AlertDialogFooter>
         </AlertDialogContent>

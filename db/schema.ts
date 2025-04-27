@@ -115,6 +115,8 @@ export const watchParties = pgTable("watch_parties", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   partyDateTime: timestamp("party_date_time", { withTimezone: true }).notNull(),
+  location: text("location").notNull(),
+  maxAttendees: integer("max_attendees").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

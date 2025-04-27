@@ -43,6 +43,13 @@
       "when": 1745751742152,
       "tag": "0005_lush_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1745757033770,
+      "tag": "0006_outstanding_frightful_four",
+      "breakpoints": true
     }
   ]
 }

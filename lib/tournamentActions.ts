@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { tournaments, watchParties, watchPartyAttendees } from "@/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { and, eq, not, inArray } from "drizzle-orm";
+import { and, eq, not, inArray, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // Interface for tournament creation/update
@@ -153,7 +153,7 @@ export async function deleteTournament(tournamentId: number) {
   }
 }
 
-// Register for a tournament (by creating a watch party attendance)
+// Register for a tournament
 export async function registerForTournament(tournamentId: number) {
   const user = await currentUser();
 
@@ -172,33 +172,13 @@ export async function registerForTournament(tournamentId: number) {
       .limit(1);
 
     if (existingWatchParties.length === 0) {
-      // Create a new watch party if none exists
-      const tournament = await db
-        .select()
-        .from(tournaments)
-        .where(eq(tournaments.id, tournamentId))
-        .limit(1);
-
-      if (tournament.length === 0) {
-        return {
-          success: false,
-          error: "Tournament not found",
-        };
-      }
-
-      // Create a watch party at the same date as the tournament
-      const result = await db
-        .insert(watchParties)
-        .values({
-          tournamentId,
-          creatorId: user.id,
-          partyDateTime: new Date(tournament[0].date),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning({ id: watchParties.id });
-
-      watchPartyId = result[0].id;
+      // Instead of automatically creating a watch party,
+      // just return a message that directs the user to the watch parties page
+      return {
+        success: false,
+        error:
+          "No watch party exists for this tournament yet. Please check the Watch Parties page to join an existing party or create a new one.",
+      };
     } else {
       watchPartyId = existingWatchParties[0].id;
     }
@@ -219,6 +199,26 @@ export async function registerForTournament(tournamentId: number) {
       return {
         success: false,
         error: "You are already registered for this tournament",
+      };
+    }
+
+    // Check if the watch party is at max capacity
+    const watchPartyDetails = await db
+      .select({ maxAttendees: watchParties.maxAttendees })
+      .from(watchParties)
+      .where(eq(watchParties.id, watchPartyId))
+      .limit(1);
+
+    const attendeeCount = await db
+      .select({ count: count() })
+      .from(watchPartyAttendees)
+      .where(eq(watchPartyAttendees.watchPartyId, watchPartyId));
+
+    if (attendeeCount[0].count >= watchPartyDetails[0].maxAttendees) {
+      return {
+        success: false,
+        error:
+          "This watch party has reached its maximum capacity. Please check if there are other watch parties available.",
       };
     }
 
@@ -408,7 +408,9 @@ export async function getAvailableTournaments() {
 // Create a watch party for a tournament
 export async function createWatchParty(
   tournamentId: number,
-  partyDateTime: Date
+  partyDateTime: Date,
+  location: string = "TBD",
+  maxAttendees: number = 30
 ) {
   const user = await currentUser();
 
@@ -424,6 +426,8 @@ export async function createWatchParty(
         tournamentId,
         creatorId: user.id,
         partyDateTime,
+        location,
+        maxAttendees,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -438,8 +442,9 @@ export async function createWatchParty(
       joinedAt: new Date(),
     });
 
-    // Revalidate the tournaments page
+    // Revalidate the tournaments and watch parties pages
     revalidatePath("/dashboard/tournaments");
+    revalidatePath("/dashboard/watch-parties");
     return { success: true, watchPartyId };
   } catch (error) {
     console.error("Error creating watch party:", error);
