@@ -96,8 +96,8 @@ export const tournaments = pgTable(
     name: text("name").notNull(),
     date: date("date").notNull(),
     gameTitle: text("game_title").notNull(),
-    genre: text("genre"),
-    prizeFund: text("prize_fund"),
+    genre: text("genre").notNull(),
+    prizeFund: text("prize_fund").notNull(),
   },
   (table) => [
     uniqueIndex("tournament_name_idx").on(table.name),
