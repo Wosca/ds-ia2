@@ -1,0 +1,1 @@
+ALTER TABLE "computer_labs" ALTER COLUMN "computer_count" DROP NOT NULL;

@@ -1,133 +1,138 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
-  LayoutGridIcon,
-  TrophyIcon,
-  UsersIcon,
-  CalendarIcon,
-} from "lucide-react";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Trophy, Users, Laptop, Gamepad2 } from "lucide-react";
+import { currentUser } from "@clerk/nextjs/server";
 
-export default function Dashboard() {
-  const upcomingTournaments = [
-    {
-      id: 1,
-      name: "Spring Showdown",
-      date: "2025-05-01",
-      game: "League of Legends",
-    },
-    { id: 2, name: "FPS Masters", date: "2025-06-15", game: "Counter-Strike" },
-  ];
-
-  const recentLabBookings = [
-    { id: 1, name: "Lab A", date: "2025-04-20", teamName: "Team Alpha" },
-    { id: 2, name: "Lab B", date: "2025-04-22", teamName: "Team Bravo" },
-  ];
+export default async function Dashboard() {
+  const user = await currentUser();
 
   return (
-    <div className="container px-6 py-8 mx-auto">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">Dashboard</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <DashboardCard
-          title="Computer Labs"
-          subtitle="View & book labs"
-          icon={<LayoutGridIcon className="h-6 w-6" />}
-          href="/dashboard/labs"
-        />
-        <DashboardCard
-          title="Tournaments"
-          subtitle="Browse tournaments"
-          icon={<TrophyIcon className="h-6 w-6" />}
-          href="/dashboard/tournaments"
-        />
-        <DashboardCard
-          title="Teams"
-          subtitle="Manage your teams"
-          icon={<UsersIcon className="h-6 w-6" />}
-          href="/dashboard/teams"
-        />
-        <DashboardCard
-          title="Watch Parties"
-          subtitle="Organize events"
-          icon={<CalendarIcon className="h-6 w-6" />}
-          href="/dashboard/tournaments/watch-party"
-        />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {user?.firstName || "User"}!
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Upcoming Tournaments</h2>
-            <Button variant="link" asChild>
-              <Link href="/dashboard/tournaments">View all</Link>
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {upcomingTournaments.map((tournament) => (
-              <div key={tournament.id} className="border rounded-md p-4">
-                <div className="font-medium">{tournament.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {tournament.game}
-                </div>
-                <div className="text-sm flex items-center mt-2">
-                  <CalendarIcon className="h-4 w-4 mr-2 opacity-70" />
-                  {tournament.date}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">My Teams</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-muted-foreground">
+              Teams you&apos;ve created or joined
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Lab Bookings</CardTitle>
+            <Laptop className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">
+              Upcoming lab bookings
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tournaments</CardTitle>
+            <Trophy className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5</div>
+            <p className="text-xs text-muted-foreground">
+              Available tournaments
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Watch Parties</CardTitle>
+            <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1</div>
+            <p className="text-xs text-muted-foreground">
+              Upcoming watch parties
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-        <div className="border rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Recent Lab Bookings</h2>
-            <Button variant="link" asChild>
-              <Link href="/dashboard/labs">View all</Link>
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {recentLabBookings.map((booking) => (
-              <div key={booking.id} className="border rounded-md p-4">
-                <div className="font-medium">{booking.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {booking.teamName}
-                </div>
-                <div className="text-sm flex items-center mt-2">
-                  <CalendarIcon className="h-4 w-4 mr-2 opacity-70" />
-                  {booking.date}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Tournaments</CardTitle>
+            <CardDescription>
+              Tournaments happening in the next 30 days
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Trophy className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">
+                    Spring League of Legends Championship
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    May 15, 2025 • MOBA • $500 Prize
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="flex items-center gap-4">
+                <Trophy className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">Rocket League Tournament</p>
+                  <p className="text-sm text-muted-foreground">
+                    May 22, 2025 • Sports • $300 Prize
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Lab Bookings</CardTitle>
+            <CardDescription>Your recent computer lab bookings</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Laptop className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">Lab A - Team Practice</p>
+                  <p className="text-sm text-muted-foreground">
+                    May 10, 2025 • Rocket League • Team Boost
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Laptop className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">Lab C - Tournament Prep</p>
+                  <p className="text-sm text-muted-foreground">
+                    May 12, 2025 • League of Legends • Team Nexus
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-}
-
-function DashboardCard({
-  title,
-  subtitle,
-  icon,
-  href,
-}: {
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  href: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="block group border rounded-lg p-6 transition-colors hover:bg-accent"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-lg font-medium">{title}</div>
-        <div className="p-2 rounded-full bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
-    </Link>
   );
 }

@@ -18,19 +18,12 @@ import {
 import {
   Moon,
   Sun,
-  TreePine,
   UserCircle,
   Settings,
   ChevronDown,
   ChevronUp,
   LogOut,
-  Flower,
-  Flower2,
-  MoonStar,
   HomeIcon,
-  LayoutGridIcon,
-  TrophyIcon,
-  UsersIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -40,47 +33,37 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 
-export function SidebarLayout({ children }: { children: React.ReactNode }) {
+interface SidebarNavClientProps {
+  categorizedUtilities: {
+    name: string;
+    icon: React.JSX.Element;
+    href: string;
+  }[];
+}
+
+export function SidebarLayoutClient({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
-        <SidebarNav />
+        <SidebarNavClient categorizedUtilities={[]} />{" "}
         <SidebarInset className="w-full">{children}</SidebarInset>
       </div>
     </SidebarProvider>
   );
 }
 
-export function SidebarNav() {
+export function SidebarNavClient({
+  categorizedUtilities,
+}: SidebarNavClientProps) {
   const { setTheme, theme } = useTheme();
   const { user, isLoaded } = useUser();
   const clerk = useClerk();
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const pathname = usePathname();
-
-  // Get utilities grouped by category
-  const mainItems = [
-    {
-      href: "/dashboard",
-      title: "Dashboard",
-      icon: <HomeIcon className="h-4 w-4" />,
-    },
-    {
-      href: "/dashboard/labs",
-      title: "Labs",
-      icon: <LayoutGridIcon className="h-4 w-4" />,
-    },
-    {
-      href: "/dashboard/tournaments",
-      title: "Tournaments",
-      icon: <TrophyIcon className="h-4 w-4" />,
-    },
-    {
-      href: "/dashboard/teams",
-      title: "Teams",
-      icon: <UsersIcon className="h-4 w-4" />,
-    },
-  ];
 
   // Helper function to determine if a theme is active
   const isActiveTheme = (themeName: string) => {
@@ -90,29 +73,41 @@ export function SidebarNav() {
     return theme === themeName;
   };
 
+  const isRoot = pathname === "/";
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="flex items-center px-4">
           <Link href="/" className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">Canterbury</h1>
+            <h1 className={`text-xl font-bold`}>
+              {isRoot ? (
+                "eSports Hub"
+              ) : (
+                <div className="flex items-center gap-2">
+                  <HomeIcon /> Home{" "}
+                </div>
+              )}
+            </h1>
           </Link>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {mainItems.map((category) => (
-          <SidebarMenuItem key={category.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === category.href}
-              tooltip={category.title}
-            >
-              <Link href={category.href}>
-                {category.icon}
-                <span>{category.title}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+        {categorizedUtilities.map((category) => (
+          <SidebarMenu key={category.name}>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === category.href}
+                tooltip={category.name}
+              >
+                <Link href={category.href}>
+                  {category.icon}
+                  <span>{category.name}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         ))}
       </SidebarContent>
 
@@ -159,7 +154,9 @@ export function SidebarNav() {
                 }}
                 className="overflow-hidden"
               >
-                <div className="space-y-1 p-1 mt-1 bg-sidebar-accent/50 rounded-md">
+                <div
+                  className={`space-y-1 p-2 mt-1 rounded-md bg-sidebar-accent/50`}
+                >
                   <Button
                     variant="ghost"
                     size="sm"
@@ -185,58 +182,6 @@ export function SidebarNav() {
                   >
                     <Moon className="mr-2 h-4 w-4" />
                     Dark
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("twilight")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("twilight")}
-                  >
-                    <MoonStar className="mr-2 h-4 w-4" />
-                    Twilight
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("pink")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("pink")}
-                  >
-                    <Flower className="mr-2 h-4 w-4" />
-                    Pink
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("periwinkle")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("periwinkle")}
-                  >
-                    <TreePine className="mr-2 h-4 w-4" />
-                    Periwinkle
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start pl-9 ${
-                      isActiveTheme("sage")
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
-                    }`}
-                    onClick={() => setTheme("sage")}
-                  >
-                    <Flower2 className="mr-2 h-4 w-4" />
-                    Sage
                   </Button>
 
                   <Button
@@ -267,13 +212,15 @@ export function SidebarNav() {
             <SidebarMenu>
               <SignedIn>
                 <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <UserCircle className="h-5 w-5" />
-                    <span>
-                      {isLoaded && user
-                        ? `${user.firstName} ${user.lastName}`
-                        : "Profile"}
-                    </span>
+                  <SidebarMenuButton asChild>
+                    <div>
+                      <Link href="/profile" className="flex items-center gap-2">
+                        <UserCircle className="h-4 w-4" />
+                        {isLoaded && user
+                          ? `${user.firstName} ${user.lastName}`
+                          : "Profile"}
+                      </Link>
+                    </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>

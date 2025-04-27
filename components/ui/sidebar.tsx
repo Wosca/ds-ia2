@@ -4,6 +4,7 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
 import { PanelLeft } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,8 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false);
+    const { theme } = useTheme();
+    const isGlassmorphism = theme === "glassmorphism";
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -147,7 +150,8 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
+              "group/sidebar-wrapper flex min-h-svh w-full",
+              !isGlassmorphism && "has-[[data-variant=inset]]:bg-sidebar",
               className
             )}
             ref={ref}
@@ -168,6 +172,7 @@ const Sidebar = React.forwardRef<
     side?: "left" | "right";
     variant?: "sidebar" | "floating" | "inset";
     collapsible?: "offcanvas" | "icon" | "none";
+    isGlassmorphism?: boolean;
   }
 >(
   (
@@ -175,6 +180,7 @@ const Sidebar = React.forwardRef<
       side = "left",
       variant = "sidebar",
       collapsible = "offcanvas",
+      isGlassmorphism = false,
       className,
       children,
       ...props
@@ -188,6 +194,9 @@ const Sidebar = React.forwardRef<
         <div
           className={cn(
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
+            isGlassmorphism
+              ? "backdrop-blur-xl bg-white/[var(--glass-opacity)] border border-primary/[var(--glass-border-opacity)] shadow-lg"
+              : "",
             className
           )}
           ref={ref}
@@ -258,8 +267,18 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className={cn(
+              "flex h-full w-full flex-col",
+              isGlassmorphism
+                ? "backdrop-blur-xl bg-white/[var(--glass-opacity)] border border-primary/[var(--glass-border-opacity)] shadow-lg rounded-xl overflow-hidden"
+                : "bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            )}
           >
+            {isGlassmorphism && (
+              <div className="absolute inset-0 -z-10">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent"></div>
+              </div>
+            )}
             {children}
           </div>
         </div>
@@ -328,11 +347,15 @@ const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
+  const { theme } = useTheme();
+  const isGlassmorphism = theme === "glassmorphism";
+
   return (
     <main
       ref={ref}
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background rounded-3xl overflow-auto",
+        "relative flex w-full flex-1 flex-col overflow-hidden",
+        isGlassmorphism ? "bg-transparent" : "bg-background rounded-3xl",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
@@ -394,11 +417,18 @@ const SidebarSeparator = React.forwardRef<
   React.ElementRef<typeof Separator>,
   React.ComponentProps<typeof Separator>
 >(({ className, ...props }, ref) => {
+  const { theme } = useTheme();
+  const isGlassmorphism = theme === "glassmorphism";
+
   return (
     <Separator
       ref={ref}
       data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      className={cn(
+        "mx-2 w-auto",
+        isGlassmorphism ? "bg-primary/20" : "bg-sidebar-border",
+        className
+      )}
       {...props}
     />
   );
@@ -409,16 +439,61 @@ const SidebarContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const [showFade, setShowFade] = React.useState(false);
+
+  // Check if content is scrollable
+  React.useEffect(() => {
+    const checkScroll = () => {
+      if (contentRef.current) {
+        const { scrollHeight, clientHeight, scrollTop } = contentRef.current;
+        // Show fade if content is scrollable and not at the bottom
+        setShowFade(
+          scrollHeight > clientHeight &&
+            scrollTop < scrollHeight - clientHeight - 10
+        );
+      }
+    };
+
+    const contentElement = contentRef.current;
+    if (contentElement) {
+      contentElement.addEventListener("scroll", checkScroll);
+      // Initial check
+      checkScroll();
+
+      // Check on resize too
+      window.addEventListener("resize", checkScroll);
+
+      return () => {
+        contentElement.removeEventListener("scroll", checkScroll);
+        window.removeEventListener("resize", checkScroll);
+      };
+    }
+  }, []);
+
   return (
-    <div
-      ref={ref}
-      data-sidebar="content"
-      className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
-        className
+    <div className="relative flex-1 min-h-0 flex flex-col">
+      <div
+        ref={(node) => {
+          // Merge refs
+          if (typeof ref === "function") ref(node);
+          else if (ref) ref.current = node;
+          contentRef.current = node;
+        }}
+        data-sidebar="content"
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-auto no-scrollbar group-data-[collapsible=icon]:overflow-hidden",
+          className
+        )}
+        {...props}
+      />
+      {showFade && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none bg-gradient-to-t from-sidebar to-transparent"
+          data-sidebar="content-fade"
+        />
       )}
-      {...props}
-    />
+    </div>
   );
 });
 SidebarContent.displayName = "SidebarContent";
@@ -443,13 +518,18 @@ const SidebarGroupLabel = React.forwardRef<
   React.ComponentProps<"div"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "div";
+  const { theme } = useTheme();
+  const isGlassmorphism = theme === "glassmorphism";
 
   return (
     <Comp
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-in-out focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-in-out focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        isGlassmorphism
+          ? "text-white/90 font-medium"
+          : "text-sidebar-foreground/70",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
       )}
@@ -565,6 +645,8 @@ const SidebarMenuButton = React.forwardRef<
   ) => {
     const Comp = asChild ? Slot : "button";
     const { isMobile, state } = useSidebar();
+    const { theme } = useTheme();
+    const isGlassmorphism = theme === "glassmorphism";
 
     const button = (
       <Comp
@@ -572,7 +654,13 @@ const SidebarMenuButton = React.forwardRef<
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+        className={cn(
+          sidebarMenuButtonVariants({ variant, size }),
+          isGlassmorphism
+            ? "text-white/90 hover:bg-primary/20 hover:backdrop-blur-lg data-[active=true]:bg-primary/30 data-[active=true]:text-white"
+            : "",
+          className
+        )}
         {...props}
       />
     );

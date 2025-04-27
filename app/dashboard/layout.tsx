@@ -1,21 +1,18 @@
-"use client";
-
-import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import type React from "react";
+import { redirect } from "next/navigation";
+import { currentUser } from "@clerk/nextjs/server";
 import { SidebarLayout } from "@/components/SidebarNav";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  return (
-    <>
-      <SignedIn>
-        <SidebarLayout>{children}</SidebarLayout>
-      </SignedIn>
-      <SignedOut>
-        <RedirectToSignIn />
-      </SignedOut>
-    </>
-  );
+}) {
+  const user = await currentUser();
+
+  if (!user) {
+    redirect("/?authRequired=true");
+  }
+
+  return <SidebarLayout>{children}</SidebarLayout>;
 }
