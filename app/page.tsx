@@ -4,6 +4,7 @@ import { ArrowRight, Trophy, Users, Laptop, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut, useClerk } from "@clerk/nextjs";
 import NoAuth from "./NoAuth";
+import { Suspense } from "react";
 
 export default function Home() {
   const clerk = useClerk();
@@ -32,7 +33,9 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        <NoAuth />
+        <Suspense>
+          <NoAuth />
+        </Suspense>
         <section className="py-12 md:py-24 lg:py-32 xl:py-48">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center">
